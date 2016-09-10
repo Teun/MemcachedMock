@@ -42,5 +42,18 @@ namespace MemcachedMock
                 }
             }
         }
+
+        public bool Clear(string key)
+        {
+            if (_data.ContainsKey(key))
+            {
+                _data.Remove(key);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }

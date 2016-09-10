@@ -204,7 +204,7 @@ namespace MemcachedMock
 
         public bool Remove(string key)
         {
-            throw new NotImplementedException();
+            return _store.Clear(key);
         }
 
         public ServerStats Stats()
