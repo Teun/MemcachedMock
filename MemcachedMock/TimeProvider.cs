@@ -2,14 +2,32 @@
 
 namespace MemcachedMock
 {
-    internal class TimeProvider
+    public interface ITime
     {
-        private DateTime? FixedTime = null;
-        internal DateTime Now()
+        void Set(DateTime value);
+        void Proceed(TimeSpan time);
+        DateTime Now();
+    }
+    internal class TimeProvider : ITime
+    {
+        private DateTime? _fixedTime = null;
+
+        public void Proceed(TimeSpan time)
         {
-            if (FixedTime.HasValue)
+            if (!_fixedTime.HasValue) _fixedTime = DateTime.Now;
+            _fixedTime = _fixedTime.Value.Add(time);
+        }
+
+        public void Set(DateTime value)
+        {
+            _fixedTime = value;
+        }
+
+        public DateTime Now()
+        {
+            if (_fixedTime.HasValue)
             {
-                return FixedTime.Value;
+                return _fixedTime.Value;
             }
             else
             {

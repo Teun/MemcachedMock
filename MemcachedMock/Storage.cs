@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace MemcachedMock
@@ -33,7 +34,7 @@ namespace MemcachedMock
         }
         public void PurgeOnTime(DateTime now)
         {
-            foreach (var key in _data.Keys)
+            foreach (var key in _data.Keys.ToList())
             {
                 if(_data[key].Expires < now)
                 {

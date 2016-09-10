@@ -54,6 +54,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="BasicStoreGetWithExpiration.cs" />
     <Compile Include="BasicStoreGet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

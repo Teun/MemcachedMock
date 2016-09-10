@@ -6,13 +6,20 @@ using System.Threading.Tasks;
 using Enyim.Caching.Memcached;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using Enyim.Caching;
 
 namespace MemcachedMock
 {
-    public class CacheMock : Enyim.Caching.IMemcachedClient
+    public class CacheMock : IMemcachedClient, ICacheMeta
     {
         Storage _store;
         TimeProvider _time = new TimeProvider();
+
+        public ITime Time
+        {
+            get { return _time; } 
+        }
+
         private void CheckUpToDate()
         {
             if(_store == null)
@@ -32,8 +39,20 @@ namespace MemcachedMock
             }
         }
 
+        private object FromBytes(byte[] data)
+        {
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                object result = formatter.Deserialize(stream);
+                return result;
+            }
+        }
 
-
+        private T FromBytes<T>(byte[] data)
+        {
+            return (T)FromBytes(data);
+        }
 
         public event Action<IMemcachedNode> NodeFailed;
 
@@ -114,12 +133,18 @@ namespace MemcachedMock
 
         public object Get(string key)
         {
-            throw new NotImplementedException();
+            CheckUpToDate();
+            byte[] data = _store.Get(key);
+            if (data == null) return null;
+            return FromBytes(data);
         }
 
         public T Get<T>(string key)
         {
-            throw new NotImplementedException();
+            CheckUpToDate();
+            byte[] data = _store.Get(key);
+            if (data == null) return default(T);
+            return FromBytes<T>(data);
         }
 
         public IDictionary<string, CasResult<object>> GetWithCas(IEnumerable<string> keys)
@@ -201,12 +226,16 @@ namespace MemcachedMock
 
         public bool Store(StoreMode mode, string key, object value, TimeSpan validFor)
         {
-            throw new NotImplementedException();
+            CheckUpToDate();
+            _store.Set(key, _time.Now().Add(validFor), AsBytes(value));
+            return true;
         }
 
         public bool Store(StoreMode mode, string key, object value, DateTime expiresAt)
         {
-            throw new NotImplementedException();
+            CheckUpToDate();
+            _store.Set(key, expiresAt, AsBytes(value));
+            return true;
         }
 
         public bool TryGet(string key, out object value)
@@ -218,5 +247,10 @@ namespace MemcachedMock
         {
             throw new NotImplementedException();
         }
+    }
+
+    public interface ICacheMeta
+    {
+        ITime Time { get; }
     }
 }
