@@ -118,12 +118,11 @@ namespace MemcachedMock
 
         public void Dispose()
         {
-            throw new NotImplementedException();
         }
 
         public void FlushAll()
         {
-            throw new NotImplementedException();
+            _store = new Storage();
         }
 
         public IDictionary<string, object> Get(IEnumerable<string> keys)
@@ -219,23 +218,52 @@ namespace MemcachedMock
 
         public bool Store(StoreMode mode, string key, object value)
         {
-            CheckUpToDate();
-            _store.Set(key, null, AsBytes(value));
-            return true;
+            return PerformStore(mode, key, value, DateTime.MaxValue);
         }
 
         public bool Store(StoreMode mode, string key, object value, TimeSpan validFor)
         {
-            CheckUpToDate();
-            _store.Set(key, _time.Now().Add(validFor), AsBytes(value));
-            return true;
+            DateTime end = _time.Now().Add(validFor);
+            if (validFor == TimeSpan.Zero) end = DateTime.MaxValue;
+            return PerformStore(mode, key, value, end);
         }
 
         public bool Store(StoreMode mode, string key, object value, DateTime expiresAt)
         {
+            return PerformStore(mode, key, value, expiresAt);
+        }
+        private bool PerformStore(StoreMode mode, string key, object value, DateTime expiresAt)
+        {
             CheckUpToDate();
-            _store.Set(key, expiresAt, AsBytes(value));
-            return true;
+            object current;
+            switch (mode)
+            {
+                case StoreMode.Add:
+                    current = this.Get(key);
+                    if(current == null)
+                    {
+                        _store.Set(key, expiresAt, AsBytes(value));
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                case StoreMode.Replace:
+                    current = this.Get(key);
+                    if (current == null)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        _store.Set(key, expiresAt, AsBytes(value));
+                        return true;
+                    }
+                default:
+                    _store.Set(key, expiresAt, AsBytes(value));
+                    return true;
+            }
         }
 
         public bool TryGet(string key, out object value)

@@ -54,6 +54,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="StoreReplace.cs" />
+    <Compile Include="StoreAdd.cs" />
     <Compile Include="BasicStoreRemove.cs" />
     <Compile Include="BasicStoreGetWithExpiration.cs" />
     <Compile Include="BasicStoreGet.cs" />
