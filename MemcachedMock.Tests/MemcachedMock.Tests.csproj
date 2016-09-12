@@ -54,6 +54,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="IncrementDecrement.cs" />
     <Compile Include="StoreReplace.cs" />
     <Compile Include="StoreAdd.cs" />
     <Compile Include="BasicStoreRemove.cs" />

@@ -163,7 +163,7 @@ namespace MemcachedMock
 
         public ulong Increment(string key, ulong defaultValue, ulong delta)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, defaultValue, delta, DateTime.MaxValue);
         }
 
         public ulong Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
@@ -190,6 +190,23 @@ namespace MemcachedMock
         {
             throw new NotImplementedException();
         }
+        private ulong PerformIncrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
+        {
+            CheckUpToDate();
+            object currValue = Get(key);
+            if(currValue == null)
+            {
+                Store(StoreMode.Set, key, defaultValue, expiresAt);
+                return defaultValue;
+            }
+            else
+            {
+                ulong currNumeric = Convert.ToUInt64(currValue);
+                Store(StoreMode.Set, key, currNumeric+1, expiresAt);
+                return currNumeric+1;
+            }
+        }
+
 
         public bool Prepend(string key, ArraySegment<byte> data)
         {
