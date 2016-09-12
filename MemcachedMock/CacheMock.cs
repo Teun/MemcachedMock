@@ -53,6 +53,12 @@ namespace MemcachedMock
         {
             return (T)FromBytes(data);
         }
+        private DateTime EndTime(TimeSpan ts)
+        {
+            DateTime end = _time.Now().Add(ts);
+            if (ts == TimeSpan.Zero) end = DateTime.MaxValue;
+            return end;
+        }
 
         public event Action<IMemcachedNode> NodeFailed;
 
@@ -88,7 +94,7 @@ namespace MemcachedMock
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), DateTime.MaxValue);
         }
 
         public CasResult<ulong> Decrement(string key, ulong defaultValue, ulong delta, ulong cas)
@@ -98,12 +104,12 @@ namespace MemcachedMock
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), EndTime(validFor));
         }
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), expiresAt);
         }
 
         public CasResult<ulong> Decrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
@@ -163,12 +169,12 @@ namespace MemcachedMock
 
         public ulong Increment(string key, ulong defaultValue, ulong delta)
         {
-            return PerformIncrement(key, defaultValue, delta, DateTime.MaxValue);
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), DateTime.MaxValue);
         }
 
         public ulong Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), EndTime(validFor));
         }
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, ulong cas)
@@ -178,7 +184,7 @@ namespace MemcachedMock
 
         public ulong Increment(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), expiresAt);
         }
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
@@ -190,20 +196,20 @@ namespace MemcachedMock
         {
             throw new NotImplementedException();
         }
-        private ulong PerformIncrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
+        private ulong PerformIncrement(string key, long defaultValue, long delta, DateTime expiresAt)
         {
             CheckUpToDate();
             object currValue = Get(key);
             if(currValue == null)
             {
-                Store(StoreMode.Set, key, defaultValue, expiresAt);
-                return defaultValue;
+                Store(StoreMode.Set, key, (ulong)defaultValue, expiresAt);
+                return (ulong)defaultValue;
             }
             else
             {
-                ulong currNumeric = Convert.ToUInt64(currValue);
-                Store(StoreMode.Set, key, currNumeric+1, expiresAt);
-                return currNumeric+1;
+                long currNumeric = Convert.ToInt64(currValue);
+                Store(StoreMode.Set, key, (ulong)(currNumeric+delta), expiresAt);
+                return (ulong)(currNumeric+delta);
             }
         }
 
@@ -240,9 +246,7 @@ namespace MemcachedMock
 
         public bool Store(StoreMode mode, string key, object value, TimeSpan validFor)
         {
-            DateTime end = _time.Now().Add(validFor);
-            if (validFor == TimeSpan.Zero) end = DateTime.MaxValue;
-            return PerformStore(mode, key, value, end);
+            return PerformStore(mode, key, value, EndTime(validFor));
         }
 
         public bool Store(StoreMode mode, string key, object value, DateTime expiresAt)
