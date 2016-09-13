@@ -133,7 +133,7 @@ namespace MemcachedMock
 
         public IDictionary<string, object> Get(IEnumerable<string> keys)
         {
-            throw new NotImplementedException();
+            return keys.ToDictionary(s => s, s => PerformGet(s));
         }
 
         public object Get(string key)
@@ -292,7 +292,8 @@ namespace MemcachedMock
 
         public bool TryGet(string key, out object value)
         {
-            throw new NotImplementedException();
+            value = PerformGet(key);
+            return value != null;
         }
 
         public bool TryGetWithCas(string key, out CasResult<object> value)

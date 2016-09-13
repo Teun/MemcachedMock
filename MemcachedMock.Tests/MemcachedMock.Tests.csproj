@@ -54,6 +54,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="MultiGet.cs" />
+    <Compile Include="TryGet.cs" />
     <Compile Include="IncrementDecrement.cs" />
     <Compile Include="StoreReplace.cs" />
     <Compile Include="StoreAdd.cs" />
