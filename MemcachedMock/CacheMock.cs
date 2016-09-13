@@ -138,18 +138,21 @@ namespace MemcachedMock
 
         public object Get(string key)
         {
-            CheckUpToDate();
-            byte[] data = _store.Get(key);
-            if (data == null) return null;
-            return FromBytes(data);
+            return PerformGet(key);
         }
 
         public T Get<T>(string key)
         {
+            object val = PerformGet(key);
+            if (val == null) return default(T);
+            return (T)val;
+        }
+        private object PerformGet(string key)
+        {
             CheckUpToDate();
             byte[] data = _store.Get(key);
-            if (data == null) return default(T);
-            return FromBytes<T>(data);
+            if (data == null) return null;
+            return FromBytes(data);
         }
 
         public IDictionary<string, CasResult<object>> GetWithCas(IEnumerable<string> keys)
@@ -199,7 +202,7 @@ namespace MemcachedMock
         private ulong PerformIncrement(string key, long defaultValue, long delta, DateTime expiresAt)
         {
             CheckUpToDate();
-            object currValue = Get(key);
+            object currValue = PerformGet(key);
             if(currValue == null)
             {
                 Store(StoreMode.Set, key, (ulong)defaultValue, expiresAt);
@@ -260,7 +263,7 @@ namespace MemcachedMock
             switch (mode)
             {
                 case StoreMode.Add:
-                    current = this.Get(key);
+                    current = this.PerformGet(key);
                     if(current == null)
                     {
                         _store.Set(key, expiresAt, AsBytes(value));
@@ -271,7 +274,7 @@ namespace MemcachedMock
                         return false;
                     }
                 case StoreMode.Replace:
-                    current = this.Get(key);
+                    current = this.PerformGet(key);
                     if (current == null)
                     {
                         return false;
