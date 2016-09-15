@@ -1,19 +1,21 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using Enyim.Caching.Memcached;
 
 namespace MemcachedMock
 {
     internal class Storage
     {
+        private static readonly ArraySegment<byte> NullArray = new ArraySegment<byte>(new byte[0]);
         private Dictionary<string, Record> _data = new Dictionary<string, Record>();
 
         private class Record
         {
-            public DateTime? Expires { get; set; }
-            public byte[] Data { get; set; }
+            public DateTime Expires { get; set; }
+            public CacheItem Data { get; set; }
         }
-        public byte[] Get(string key)
+        public CacheItem Get(string key)
         {
             if (_data.ContainsKey(key))
             {
@@ -21,12 +23,23 @@ namespace MemcachedMock
             }
             else
             {
-                return null;
+                return new CacheItem(DefaultTranscoder.TypeCodeToFlag(TypeCode.DBNull), NullArray);
             }
         }
-        public void Set(string key, DateTime? expires, byte[] data)
+        public void Set(string key, DateTime? expires, CacheItem data)
         {
-            _data[key] = new Record() { Expires = expires, Data = data };
+            if(!expires.HasValue)
+            {
+                if (_data.ContainsKey(key))
+                {
+                    expires = _data[key].Expires;
+                }
+                else
+                {
+                    expires = DateTime.MaxValue;
+                }
+            }
+            _data[key] = new Record() { Expires = expires.Value, Data = data };
         }
         public void Purge()
         {

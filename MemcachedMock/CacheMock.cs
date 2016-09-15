@@ -14,12 +14,13 @@ namespace MemcachedMock
     {
         Storage _store;
         TimeProvider _time = new TimeProvider();
+        ITranscoder _transcoder = new DefaultTranscoder();
 
         public ITime Time
         {
             get { return _time; } 
         }
-
+        #region Helpers
         private void CheckUpToDate()
         {
             if(_store == null)
@@ -29,29 +30,19 @@ namespace MemcachedMock
             _store.PurgeOnTime(_time.Now());
         }
 
-        private byte[] AsBytes(object value)
+        private CacheItem AsCacheItem(object value)
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using (MemoryStream stream = new MemoryStream())
-            {
-                formatter.Serialize(stream, value);
-                return stream.GetBuffer().Take((int)stream.Position).ToArray();
-            }
+            return _transcoder.Serialize(value);
         }
 
-        private object FromBytes(byte[] data)
+        private object FromCacheItem(CacheItem data)
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using (MemoryStream stream = new MemoryStream(data))
-            {
-                object result = formatter.Deserialize(stream);
-                return result;
-            }
+            return _transcoder.Deserialize(data);
         }
 
-        private T FromBytes<T>(byte[] data)
+        private T FromCacheItem<T>(CacheItem data)
         {
-            return (T)FromBytes(data);
+            return (T)FromCacheItem(data);
         }
         private DateTime EndTime(TimeSpan ts)
         {
@@ -59,18 +50,45 @@ namespace MemcachedMock
             if (ts == TimeSpan.Zero) end = DateTime.MaxValue;
             return end;
         }
+        #endregion
 
         public event Action<IMemcachedNode> NodeFailed;
 
         public bool Append(string key, ArraySegment<byte> data)
         {
-            throw new NotImplementedException();
+            return PerformCombine(key, data);
+        }
+
+        private bool PerformCombine(string key, ArraySegment<byte> data, bool atEnd = true)
+        {
+            CheckUpToDate();
+            CacheItem current = _store.Get(key);
+            if (current.IsNull())
+            {
+                return false;
+            }
+            byte[] newVal = (atEnd ? current.Data.Concat(data) : data.Concat(current.Data)).ToArray();
+            current.Data = new ArraySegment<byte>(newVal);
+            //current.Flags = DefaultTranscoder.RawDataFlag;
+            _store.Set(key, null, current);
+            return true;
         }
 
         public CasResult<bool> Append(string key, ulong cas, ArraySegment<byte> data)
         {
             throw new NotImplementedException();
         }
+
+        public bool Prepend(string key, ArraySegment<byte> data)
+        {
+            return PerformCombine(key, data, false);
+        }
+
+        public CasResult<bool> Prepend(string key, ulong cas, ArraySegment<byte> data)
+        {
+            throw new NotImplementedException();
+        }
+
 
         public CasResult<bool> Cas(StoreMode mode, string key, object value)
         {
@@ -150,9 +168,9 @@ namespace MemcachedMock
         private object PerformGet(string key)
         {
             CheckUpToDate();
-            byte[] data = _store.Get(key);
-            if (data == null) return null;
-            return FromBytes(data);
+            CacheItem data = _store.Get(key);
+            if (data.Data.Count == 0) return null;
+            return FromCacheItem(data);
         }
 
         public IDictionary<string, CasResult<object>> GetWithCas(IEnumerable<string> keys)
@@ -216,17 +234,6 @@ namespace MemcachedMock
             }
         }
 
-
-        public bool Prepend(string key, ArraySegment<byte> data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public CasResult<bool> Prepend(string key, ulong cas, ArraySegment<byte> data)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool Remove(string key)
         {
             return _store.Clear(key);
@@ -266,7 +273,7 @@ namespace MemcachedMock
                     current = this.PerformGet(key);
                     if(current == null)
                     {
-                        _store.Set(key, expiresAt, AsBytes(value));
+                        _store.Set(key, expiresAt, AsCacheItem(value));
                         return true;
                     }
                     else
@@ -281,11 +288,11 @@ namespace MemcachedMock
                     }
                     else
                     {
-                        _store.Set(key, expiresAt, AsBytes(value));
+                        _store.Set(key, expiresAt, AsCacheItem(value));
                         return true;
                     }
                 default:
-                    _store.Set(key, expiresAt, AsBytes(value));
+                    _store.Set(key, expiresAt, AsCacheItem(value));
                     return true;
             }
         }
