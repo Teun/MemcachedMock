@@ -67,7 +67,7 @@ namespace MemcachedMock
             {
                 return false;
             }
-            byte[] newVal = (atEnd ? current.Data.Concat(data) : data.Concat(current.Data)).ToArray();
+            byte[] newVal = (atEnd ? current.Data.AsArray().Concat(data.AsArray()) : data.AsArray().Concat(current.Data.AsArray())).ToArray();
             current.Data = new ArraySegment<byte>(newVal);
             //current.Flags = DefaultTranscoder.RawDataFlag;
             _store.Set(key, null, current);
