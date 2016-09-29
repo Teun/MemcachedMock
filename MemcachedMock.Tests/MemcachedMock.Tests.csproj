@@ -57,6 +57,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="AppendPrepend.cs" />
+    <Compile Include="Stats.cs" />
     <Compile Include="MultiGet.cs" />
     <Compile Include="TryGet.cs" />
     <Compile Include="IncrementDecrement.cs" />

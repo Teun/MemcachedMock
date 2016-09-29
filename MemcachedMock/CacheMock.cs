@@ -67,6 +67,7 @@ namespace MemcachedMock
         private bool PerformCombine(string key, ArraySegment<byte> data, bool atEnd = true)
         {
             CheckUpToDate();
+            _stats.Increment(1, (int)Math.Ceiling(((double)data.Count / 1400)));
             CacheItem current = _store.Get(key);
             if (current.IsNull())
             {
@@ -170,10 +171,11 @@ namespace MemcachedMock
             if (val == null) return default(T);
             return (T)val;
         }
-        private object PerformGet(string key)
+        private object PerformGet(string key, bool count = true)
         {
             CheckUpToDate();
             CacheItem data = _store.Get(key);
+            if(count) _stats.Increment(1, 1 + data.PacketSize());
             if (data.Data.Count == 0) return null;
             return FromCacheItem(data);
         }
@@ -225,6 +227,7 @@ namespace MemcachedMock
         private ulong PerformIncrement(string key, long defaultValue, long delta, DateTime expiresAt)
         {
             CheckUpToDate();
+            _stats.Increment(1, 2);
             object currValue = PerformGet(key);
             if(currValue == null)
             {
@@ -241,6 +244,7 @@ namespace MemcachedMock
 
         public bool Remove(string key)
         {
+            _stats.Increment(1, 2);
             return _store.Clear(key);
         }
 
@@ -272,13 +276,15 @@ namespace MemcachedMock
         {
             CheckUpToDate();
             object current;
+            CacheItem ci = AsCacheItem(value);
+            _stats.Increment(1, 1 + ci.PacketSize());
             switch (mode)
             {
                 case StoreMode.Add:
-                    current = this.PerformGet(key);
+                    current = this.PerformGet(key, false);
                     if(current == null)
                     {
-                        _store.Set(key, expiresAt, AsCacheItem(value));
+                        _store.Set(key, expiresAt, ci);
                         return true;
                     }
                     else
@@ -286,18 +292,18 @@ namespace MemcachedMock
                         return false;
                     }
                 case StoreMode.Replace:
-                    current = this.PerformGet(key);
+                    current = this.PerformGet(key, false);
                     if (current == null)
                     {
                         return false;
                     }
                     else
                     {
-                        _store.Set(key, expiresAt, AsCacheItem(value));
+                        _store.Set(key, expiresAt, ci);
                         return true;
                     }
                 default:
-                    _store.Set(key, expiresAt, AsCacheItem(value));
+                    _store.Set(key, expiresAt, ci);
                     return true;
             }
         }
