@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>MemcachedMock</id>
-    <version>0.5.001</version>
+    <version>0.5.002</version>
     <title>MemcachedMock</title>
     <authors>Teun Duynstee</authors>
     <owners>Teun Duynstee</owners>
