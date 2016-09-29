@@ -15,10 +15,15 @@ namespace MemcachedMock
         Storage _store;
         TimeProvider _time = new TimeProvider();
         ITranscoder _transcoder = new DefaultTranscoder();
+        StatsCounter _stats = new StatsCounter();
 
         public ITime Time
         {
             get { return _time; } 
+        }
+        public IStats Statistics
+        {
+            get { return _stats; }
         }
         #region Helpers
         private void CheckUpToDate()
@@ -312,5 +317,6 @@ namespace MemcachedMock
     public interface ICacheMeta
     {
         ITime Time { get; }
+        IStats Statistics { get; }
     }
 }
