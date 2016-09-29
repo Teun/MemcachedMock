@@ -2,14 +2,14 @@
 <package >
   <metadata>
     <id>MemcachedMock</id>
-    <version>0.5.001</version>
+    <version>0.5.002</version>
     <title>MemcachedMock</title>
     <authors>Teun Duynstee</authors>
     <owners>Teun Duynstee</owners>
     <projectUrl>https://github.com/Teun/MemcachedMock</projectUrl>
     <iconUrl>https://images07.combell.com/assets/website/images/hosting/caching/logo-memcached.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>MemcahedMock is a full featured drop-in for replacing the memcached server + enyim front-end in unit tests</description>
+    <description>MemcachedMock is a full featured drop-in for replacing the memcached server + enyim front-end in unit tests</description>
     <copyright>Copyright 2016</copyright>
     <tags>cache memcached unittest</tags>
     <dependencies>

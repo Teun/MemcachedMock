@@ -16,6 +16,7 @@ namespace MemcachedMock.Tests
             cfg.AddServer("127.0.0.1", 11211); cfg.Protocol = MemcachedProtocol.Text; 
             IMemcachedClient client = new MemcachedClient(cfg);
             client.FlushAll();
+            client.Store(StoreMode.Set, "abc", "fvafvsfva");
             var appRes = client.Prepend("abc", new ArraySegment<byte>(new byte[] { 6, 7, 8 }));
             var result = client.Get("abc");
         }

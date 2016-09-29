@@ -14,6 +14,10 @@ namespace MemcachedMock
         {
             return me.Data.Count == 0 && me.Flags == emptyFlag;
         }
+        public static int PacketSize(this CacheItem me)
+        {
+            return (int)Math.Ceiling( (double)me.Data.Count / 1400);
+        }
     }
     static class ArraySegmentExtensions
     {
