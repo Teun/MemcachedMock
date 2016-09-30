@@ -9,25 +9,44 @@ namespace MemcachedMock
     {
         private static readonly ArraySegment<byte> NullArray = new ArraySegment<byte>(new byte[0]);
         private Dictionary<string, Record> _data = new Dictionary<string, Record>();
+        private ulong _ticker = 0;
+
+        public Storage()
+        {
+            _ticker = Convert.ToUInt64(DateTime.Now.Ticks);
+        }
+
+        private void IncTicker()
+        {
+            _ticker++;
+        }
 
         private class Record
         {
             public DateTime Expires { get; set; }
             public CacheItem Data { get; set; }
+            public ulong Tick { get; set; }
         }
-        public CacheItem Get(string key)
+        public CacheItem Get(string key) {
+            ulong dontCare;
+            return Get(key, out dontCare);
+        }
+        public CacheItem Get(string key, out ulong casValue)
         {
             if (_data.ContainsKey(key))
             {
+                casValue = _data[key].Tick;
                 return _data[key].Data;
             }
             else
             {
+                casValue = 0;
                 return new CacheItem(DefaultTranscoder.TypeCodeToFlag(TypeCode.DBNull), NullArray);
             }
         }
         public void Set(string key, DateTime? expires, CacheItem data)
         {
+            IncTicker();
             if(!expires.HasValue)
             {
                 if (_data.ContainsKey(key))
@@ -39,7 +58,7 @@ namespace MemcachedMock
                     expires = DateTime.MaxValue;
                 }
             }
-            _data[key] = new Record() { Expires = expires.Value, Data = data };
+            _data[key] = new Record() { Expires = expires.Value, Data = data , Tick=_ticker};
         }
         public void Purge()
         {

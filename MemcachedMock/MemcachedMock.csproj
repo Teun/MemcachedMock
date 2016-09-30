@@ -55,7 +55,9 @@
     <Compile Include="TimeProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="MemcachedMock.nuspec" />
+    <None Include="MemcachedMock.nuspec">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

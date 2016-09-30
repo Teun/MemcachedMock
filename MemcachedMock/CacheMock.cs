@@ -173,8 +173,13 @@ namespace MemcachedMock
         }
         private object PerformGet(string key, bool count = true)
         {
+            ulong dontcare;
+            return PerformGet(key, out dontcare, count);
+        }
+        private object PerformGet(string key, out ulong cas, bool count = true)
+        {
             CheckUpToDate();
-            CacheItem data = _store.Get(key);
+            CacheItem data = _store.Get(key, out cas);
             if(count) _stats.Increment(1, 1 + data.PacketSize());
             if (data.Data.Count == 0) return null;
             return FromCacheItem(data);
@@ -187,12 +192,16 @@ namespace MemcachedMock
 
         public CasResult<object> GetWithCas(string key)
         {
-            throw new NotImplementedException();
+            ulong cas;
+            object result = PerformGet(key, out cas);
+            return new CasResult<object>() { Result = result, Cas = cas, StatusCode = 0 };
         }
 
         public CasResult<T> GetWithCas<T>(string key)
         {
-            throw new NotImplementedException();
+            ulong cas;
+            T result = (T)PerformGet(key, out cas);
+            return new CasResult<T>() { Result = result, Cas = cas, StatusCode = 0 };
         }
 
         public ulong Increment(string key, ulong defaultValue, ulong delta)
