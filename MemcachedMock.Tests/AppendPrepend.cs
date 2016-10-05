@@ -102,7 +102,7 @@ namespace MemcachedMock.Tests
             Assert.AreEqual(1116424, stored);
         }
         [TestMethod]
-        public void StoreStringThenPrependBytes()
+        public void StoreStringThenPrependBytes()                                                                                           
         {
             IMemcachedClient client = new CacheMock();
             client.Store(StoreMode.Set, KEY1, "May");

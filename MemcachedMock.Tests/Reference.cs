@@ -12,13 +12,17 @@ namespace MemcachedMock.Tests
         [TestMethod, Ignore]
         public void TestMethod1()
         {
+            string KEY = "1234rewqq";
             var cfg = new MemcachedClientConfiguration();
-            cfg.AddServer("127.0.0.1", 11211); cfg.Protocol = MemcachedProtocol.Text; 
+            cfg.AddServer("127.0.0.1", 11211); cfg.Protocol = MemcachedProtocol.Binary; 
             IMemcachedClient client = new MemcachedClient(cfg);
             client.FlushAll();
-            client.Store(StoreMode.Set, "abc", "fvafvsfva");
-            var appRes = client.Prepend("abc", new ArraySegment<byte>(new byte[] { 6, 7, 8 }));
-            var result = client.Get("abc");
+            client.Store(StoreMode.Set, KEY, 4);
+            var found = client.GetWithCas(KEY);
+            var casResult = client.Increment(KEY, 1, 1, found.Cas - 1);
+
+            Assert.AreEqual(2, casResult.StatusCode);
+            Assert.AreEqual(0, casResult.Result);
         }
     }
 }

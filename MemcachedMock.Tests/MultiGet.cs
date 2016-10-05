@@ -30,6 +30,20 @@ namespace MemcachedMock.Tests
             Assert.IsNull(all[KEY1]);
             Assert.IsNotNull(all[KEY2]);
         }
+        [TestMethod]
+        public void StoreGuidAndGetWithCas_ReturnsDifferentCasses()
+        {
+            Guid code = Guid.NewGuid();
+            IMemcachedClient client = new CacheMock();
+            client.Store(StoreMode.Set, KEY1, code, TimeSpan.FromMinutes(20));
+            client.Store(StoreMode.Set, KEY2, code, TimeSpan.FromMinutes(30));
+
+            var values = client.GetWithCas(new string[] { KEY1, KEY2 });
+
+            Assert.IsTrue(values.Count == 2);
+
+        }
+
 
     }
 }

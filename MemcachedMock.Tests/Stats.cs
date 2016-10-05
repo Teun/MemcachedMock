@@ -29,6 +29,18 @@ namespace MemcachedMock.Tests
             Assert.AreEqual(4, stats.EstimatedPacketCount);
         }
         [TestMethod]
+        public void Increment_Uses1()
+        {
+            var client = new CacheMock();
+            IStats stats = client.Statistics;
+            client.Increment(KEY, 5, 1);
+            Assert.AreEqual(1, stats.TotalRoundtrips);
+            client.Increment(KEY, 5, 1);
+            Assert.AreEqual(2, stats.TotalRoundtrips);
+            client.Decrement(KEY, 5, 1);
+            Assert.AreEqual(3, stats.TotalRoundtrips);
+        }
+        [TestMethod]
         public void SetAndGetLargeItem_UsesMorePackets()
         {
             var client = new CacheMock();

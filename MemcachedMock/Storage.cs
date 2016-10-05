@@ -44,7 +44,7 @@ namespace MemcachedMock
                 return new CacheItem(DefaultTranscoder.TypeCodeToFlag(TypeCode.DBNull), NullArray);
             }
         }
-        public void Set(string key, DateTime? expires, CacheItem data)
+        public ulong Set(string key, DateTime? expires, CacheItem data)
         {
             IncTicker();
             if(!expires.HasValue)
@@ -59,6 +59,7 @@ namespace MemcachedMock
                 }
             }
             _data[key] = new Record() { Expires = expires.Value, Data = data , Tick=_ticker};
+            return _ticker;
         }
         public void Purge()
         {

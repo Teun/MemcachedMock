@@ -98,42 +98,42 @@ namespace MemcachedMock
 
         public CasResult<bool> Cas(StoreMode mode, string key, object value)
         {
-            throw new NotImplementedException();
+            return PerformStore(mode, key, value, DateTime.MaxValue, 0);
         }
 
         public CasResult<bool> Cas(StoreMode mode, string key, object value, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformStore(mode, key, value, DateTime.MaxValue, cas);
         }
 
         public CasResult<bool> Cas(StoreMode mode, string key, object value, TimeSpan validFor, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformStore(mode, key, value, EndTime(validFor), cas);
         }
 
         public CasResult<bool> Cas(StoreMode mode, string key, object value, DateTime expiresAt, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformStore(mode, key, value, expiresAt, cas);
         }
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), DateTime.MaxValue);
+            return PerformIncrement(key, defaultValue, -Convert.ToInt64(delta), DateTime.MaxValue);
         }
 
         public CasResult<ulong> Decrement(string key, ulong defaultValue, ulong delta, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, defaultValue, -(long)delta, DateTime.MaxValue, ref cas);
         }
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), EndTime(validFor));
+            return PerformIncrement(key, defaultValue, -Convert.ToInt64(delta), EndTime(validFor));
         }
 
         public ulong Decrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), -Convert.ToInt64(delta), expiresAt);
+            return PerformIncrement(key, defaultValue, -Convert.ToInt64(delta), expiresAt);
         }
 
         public CasResult<ulong> Decrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
@@ -157,7 +157,7 @@ namespace MemcachedMock
 
         public IDictionary<string, object> Get(IEnumerable<string> keys)
         {
-            return keys.ToDictionary(s => s, s => PerformGet(s));
+            return keys.ToDictionary(s => s, s => PerformGet(s, false));
         }
 
         public object Get(string key)
@@ -187,7 +187,7 @@ namespace MemcachedMock
 
         public IDictionary<string, CasResult<object>> GetWithCas(IEnumerable<string> keys)
         {
-            throw new NotImplementedException();
+            return keys.Select(k => new { Key = k, Val = GetWithCas(k) }).ToDictionary(item => item.Key, item => item.Val);
         }
 
         public CasResult<object> GetWithCas(string key)
@@ -206,22 +206,23 @@ namespace MemcachedMock
 
         public ulong Increment(string key, ulong defaultValue, ulong delta)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), DateTime.MaxValue);
+            return PerformIncrement(key, defaultValue, Convert.ToInt64(delta), DateTime.MaxValue);
         }
 
         public ulong Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), EndTime(validFor));
+            return PerformIncrement(key, defaultValue, Convert.ToInt64(delta), EndTime(validFor));
         }
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, defaultValue, Convert.ToInt64(delta), DateTime.MaxValue, ref cas);
+            return default(CasResult<ulong>);
         }
 
         public ulong Increment(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
         {
-            return PerformIncrement(key, Convert.ToInt64(defaultValue), Convert.ToInt64(delta), expiresAt);
+            return PerformIncrement(key, defaultValue, Convert.ToInt64(delta), expiresAt);
         }
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
@@ -233,21 +234,35 @@ namespace MemcachedMock
         {
             throw new NotImplementedException();
         }
-        private ulong PerformIncrement(string key, long defaultValue, long delta, DateTime expiresAt)
+        private ulong PerformIncrement(string key, ulong defaultValue, long delta, DateTime expiresAt)
+        {
+            ulong dontCare = 0;
+            var cr =  PerformIncrement(key, defaultValue, delta, expiresAt, ref dontCare);
+            return cr.Result;
+        }
+
+        private CasResult<ulong> PerformIncrement(string key, ulong defaultValue, long delta, DateTime expiresAt, ref ulong cas)
         {
             CheckUpToDate();
-            _stats.Increment(1, 2);
-            object currValue = PerformGet(key);
+            ulong oldCas;
+            object currValue = PerformGet(key, out oldCas, false);
             if(currValue == null)
             {
                 Store(StoreMode.Set, key, (ulong)defaultValue, expiresAt);
-                return (ulong)defaultValue;
+                return new CasResult<ulong>() { Result = (ulong)defaultValue, Cas = 0, StatusCode = 0 };
             }
             else
             {
                 long currNumeric = Convert.ToInt64(currValue);
+                if (cas > 0 && cas != oldCas)
+                {
+                    cas = oldCas;
+                    return new CasResult<ulong>{ Result = (ulong)0, Cas = oldCas, StatusCode = 2 };
+                }
                 Store(StoreMode.Set, key, (ulong)(currNumeric+delta), expiresAt);
-                return (ulong)(currNumeric+delta);
+                ulong newCas;
+                currValue = PerformGet(key, out newCas, false);
+                return new CasResult<ulong>{ Result = (ulong)currValue, Cas = newCas, StatusCode = 1 };
             }
         }
 
@@ -283,37 +298,49 @@ namespace MemcachedMock
         }
         private bool PerformStore(StoreMode mode, string key, object value, DateTime expiresAt)
         {
+            var res = PerformStore(mode, key, value, expiresAt, 0);
+            return res.Result;
+        }
+        private CasResult<bool> PerformStore(StoreMode mode, string key, object value, DateTime expiresAt, ulong cas)
+        {
             CheckUpToDate();
-            object current;
             CacheItem ci = AsCacheItem(value);
             _stats.Increment(1, 1 + ci.PacketSize());
+            ulong oldCas;
+            object current = this.PerformGet(key, out oldCas, false); ;
+
+            if(cas != 0 && cas != oldCas)
+            {
+                return new CasResult<bool> { StatusCode = 2 };
+            }
+
             switch (mode)
             {
                 case StoreMode.Add:
-                    current = this.PerformGet(key, false);
                     if(current == null)
                     {
-                        _store.Set(key, expiresAt, ci);
-                        return true;
+                        ulong newCas = _store.Set(key, expiresAt, ci);
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
                     }
                     else
                     {
-                        return false;
+                        return new CasResult<bool> { Result = false, Cas = 0, StatusCode = 0 };
                     }
                 case StoreMode.Replace:
-                    current = this.PerformGet(key, false);
                     if (current == null)
                     {
-                        return false;
+                        return new CasResult<bool> { Result = false, Cas = 0, StatusCode = 0 };
                     }
                     else
                     {
-                        _store.Set(key, expiresAt, ci);
-                        return true;
+                        ulong newCas = _store.Set(key, expiresAt, ci);
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
                     }
                 default:
-                    _store.Set(key, expiresAt, ci);
-                    return true;
+                    {
+                        ulong newCas = _store.Set(key, expiresAt, ci);
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
+                    }
             }
         }
 
