@@ -9,20 +9,19 @@ namespace MemcachedMock.Tests
     [TestClass]
     public class Reference
     {
-        [TestMethod, Ignore]
+        [TestMethod]
         public void TestMethod1()
         {
             string KEY = "1234rewqq";
             var cfg = new MemcachedClientConfiguration();
-            cfg.AddServer("127.0.0.1", 11211); cfg.Protocol = MemcachedProtocol.Binary; 
+            cfg.AddServer("127.0.0.1", 11211); cfg.Protocol = MemcachedProtocol.Text; 
             IMemcachedClient client = new MemcachedClient(cfg);
             client.FlushAll();
             client.Store(StoreMode.Set, KEY, 4);
             var found = client.GetWithCas(KEY);
-            var casResult = client.Increment(KEY, 1, 1, found.Cas - 1);
+            var casResult = client.Cas(StoreMode.Set, KEY, 3, found.Cas);
 
-            Assert.AreEqual(2, casResult.StatusCode);
-            Assert.AreEqual(0, casResult.Result);
+            Assert.AreEqual(0, casResult.StatusCode);
         }
     }
 }

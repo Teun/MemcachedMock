@@ -320,7 +320,7 @@ namespace MemcachedMock
                     if(current == null)
                     {
                         ulong newCas = _store.Set(key, expiresAt, ci);
-                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 0 };
                     }
                     else
                     {
@@ -334,12 +334,12 @@ namespace MemcachedMock
                     else
                     {
                         ulong newCas = _store.Set(key, expiresAt, ci);
-                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 0 };
                     }
                 default:
                     {
                         ulong newCas = _store.Set(key, expiresAt, ci);
-                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 1 };
+                        return new CasResult<bool> { Result = true, Cas = newCas, StatusCode = 0 };
                     }
             }
         }

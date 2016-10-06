@@ -118,7 +118,7 @@ namespace MemcachedMock.Tests
             var found = client.GetWithCas(KEY);
             var casResult = client.Cas(StoreMode.Set, KEY, 3, found.Cas);
 
-            Assert.AreEqual(1, casResult.StatusCode);
+            Assert.AreEqual(0, casResult.StatusCode);
             Assert.IsTrue(casResult.Result);
         }
 
