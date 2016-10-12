@@ -227,7 +227,7 @@ namespace MemcachedMock
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
         {
-            throw new NotImplementedException();
+            return PerformIncrement(key, defaultValue, (long)delta, EndTime(validFor), ref cas);
         }
 
         public CasResult<ulong> Increment(string key, ulong defaultValue, ulong delta, DateTime expiresAt, ulong cas)
@@ -262,7 +262,7 @@ namespace MemcachedMock
                 Store(StoreMode.Set, key, (ulong)(currNumeric+delta), expiresAt);
                 ulong newCas;
                 currValue = PerformGet(key, out newCas, false);
-                return new CasResult<ulong>{ Result = (ulong)currValue, Cas = newCas, StatusCode = 1 };
+                return new CasResult<ulong>{ Result = (ulong)currValue, Cas = newCas, StatusCode = 0 };
             }
         }
 
